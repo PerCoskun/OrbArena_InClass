@@ -3,13 +3,13 @@
 using UnrealBuildTool;
 using System.Collections.Generic;
 
-public class OrbArena_InClassEditorTarget : TargetRules
+public class OrbArenaEditorTarget : TargetRules
 {
-	public OrbArena_InClassEditorTarget( TargetInfo Target) : base(Target)
+	public OrbArenaEditorTarget( TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V7;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_8;
-		ExtraModuleNames.Add("OrbArena_InClass");
+		ExtraModuleNames.Add("OrbArena");
 	}
 }

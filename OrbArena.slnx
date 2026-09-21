@@ -10,14 +10,14 @@
     <Platform Name="Win64-arm64ec" />
   </Configurations>
   <Folder Name="/Engine/">
-    <Project Path="Intermediate/ProjectFiles/UE5.vcxproj" Id="fd3d48a7-2e85-324f-9809-11ad5f60b4dd">
+    <Project Path="Intermediate/ProjectFiles/UE5.vcxproj" Id="ccc77673-7948-372d-b7e3-dcddd828ba62">
       <BuildType Project="BuiltWithUnrealBuildTool" />
       <Platform Project="Win64" />
       <Build Project="false" />
     </Project>
   </Folder>
   <Folder Name="/Games/">
-    <Project Path="Intermediate/ProjectFiles/OrbArena_InClass.vcxproj" Id="b3535e92-04e1-3a1a-b017-0c99456bd7a9">
+    <Project Path="Intermediate/ProjectFiles/OrbArena.vcxproj" Id="113ddce4-dfc0-33ed-99f6-98a4813e2035">
       <BuildType Solution="DebugGame Editor|Win64" Project="DebugGame_Editor" />
       <BuildType Solution="DebugGame Editor|Win64-arm64" Project="Win64_arm64_DebugGame_Editor" />
       <BuildType Solution="DebugGame Editor|Win64-arm64ec" Project="Win64_arm64ec_DebugGame_Editor" />

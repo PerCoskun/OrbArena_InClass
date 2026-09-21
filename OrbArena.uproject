@@ -5,9 +5,12 @@
 	"Description": "",
 	"Modules": [
 		{
-			"Name": "OrbArena_InClass",
+			"Name": "OrbArena",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
 		}
 	],
 	"Plugins": [

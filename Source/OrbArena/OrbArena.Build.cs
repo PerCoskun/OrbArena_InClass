@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class OrbArena_InClass : ModuleRules
+public class OrbArena : ModuleRules
 {
-	public OrbArena_InClass(ReadOnlyTargetRules Target) : base(Target)
+	public OrbArena(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
