@@ -4,13 +4,47 @@
 #include "OrbArenaCharacter.h"
 
 #include "EnhancedInputComponent.h"
+#include "OrbArenaEnemy.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "OrbArena/Objects/OrbArenaEnergyOrb.h"
 
 // Sets default values
 AOrbArenaCharacter::AOrbArenaCharacter()
 {
-	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	// // Session 7 - Arrays -- Use as an example
+	// ExampleScores.Add(100);
+	// ExampleScores.Add(450);
+	// ExampleScores.Add(75);
+	// ExampleScores.Add(900);
+	// ExampleScores.Add(250);
+	//
+	// ExampleOrbNames.Add("Red Orb");
+	// ExampleOrbNames.Add("Green Orb");
+	// ExampleOrbNames.Add("Blue Orb");
+	// ExampleOrbNames.Add("Gold Orb");
+	// ExampleOrbNames.Add("Purple Orb");
+	//
+	// // Session 8 - Three objects from the FLootDropStruct  -- Use as an example
+	// FLootDrop FirstDrop;
+	// FirstDrop.ItemName = "Small Orb";
+	// FirstDrop.Value = 10;
+	// FirstDrop.Rarity = ELootRarity::Common;
+	// LootDrops.Add(FirstDrop);
+	//
+	// FLootDrop SecondDrop;
+	// SecondDrop.ItemName = "Silver Orb";
+	// SecondDrop.Value = 50;
+	// SecondDrop.Rarity = ELootRarity::Rare;
+	// LootDrops.Add(SecondDrop);
+	//
+	// FLootDrop ThirdDrop;
+	// ThirdDrop.ItemName = "Golden Orb";
+	// ThirdDrop.Value = 100;
+	// ThirdDrop.Rarity = ELootRarity::Epic;
+	// LootDrops.Add(ThirdDrop);
 }
 
 // Called when the game starts or when spawned
@@ -19,6 +53,8 @@ void AOrbArenaCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	UpdateMovementSpeed();
+	FindEnergyOrbs();
+	PrintLootDrops();
 
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
@@ -38,18 +74,17 @@ void AOrbArenaCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	PrintTextToScreen();
-	PrintPlayerLocation();
-
 	if (GameState == EGameState::Playing)
 	{
-		if (Health <= 0 && PlayerLives > 0)
-		{
-			LoseLife();
-		}
-
 		CheckGameState();
 	}
+	else
+	{
+		GetCharacterMovement()->StopMovementImmediately();
+	}
+
+	PrintTextToScreen();
+	PrintPlayerLocation();
 }
 
 // Called to bind functionality to input
@@ -70,6 +105,8 @@ void AOrbArenaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	EnhancedInputComponent->BindAction(HealAction, ETriggerEvent::Triggered, this, &AOrbArenaCharacter::HealInput);
 
 	EnhancedInputComponent->BindAction(AddScoreAction, ETriggerEvent::Triggered, this, &AOrbArenaCharacter::AddScoreInput);
+
+	EnhancedInputComponent->BindAction(DamageEnemyAction, ETriggerEvent::Started, this, &AOrbArenaCharacter::DamageNearestEnemyInput);
 }
 
 void AOrbArenaCharacter::MovePlayer(const FInputActionValue& Value)
@@ -87,12 +124,6 @@ void AOrbArenaCharacter::MovePlayer(const FInputActionValue& Value)
 
 void AOrbArenaCharacter::StartSprint()
 {
-	// Either return early if the game state is not playing, or only do action if the gamestate is playing
-	if (GameState != EGameState::Playing)
-	{
-		return;
-	}
-
 	bIsSprinting = true;
 	UpdateMovementSpeed();
 }
@@ -105,33 +136,68 @@ void AOrbArenaCharacter::StopSprint()
 
 void AOrbArenaCharacter::DamageInput()
 {
-	// Either return early if the game state is not playing, or only do action if the gamestate is playing
-	if (GameState == EGameState::Playing)
-	{
-		ApplyDamageAmount(TempDamage);
-	}
+	ApplyDamageAmount(TempDamage);
 }
 
 void AOrbArenaCharacter::HealInput()
 {
-	// Either return early if the game state is not playing, or only do action if the gamestate is playing
-	if (GameState == EGameState::Playing)
-	{
-		HealPlayer(TempHeal);
-	}
+	HealPlayer(TempHeal);
 }
 
 void AOrbArenaCharacter::AddScoreInput()
 {
-	// Either return early if the game state is not playing, or only do action if the gamestate is playing
-	if (GameState == EGameState::Playing)
+	AddScore(TempPoints);
+}
+
+void AOrbArenaCharacter::DamageNearestEnemyInput()
+{
+	if (GameState != EGameState::Playing)
 	{
-		AddScore(TempPoints);
+		return;
+	}
+
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AOrbArenaEnemy::StaticClass(), FoundActors);
+
+	AOrbArenaEnemy* NearestEnemy = nullptr;
+	float NearestDistance = 0.f;
+
+	for (AActor* Actor : FoundActors)
+	{
+		AOrbArenaEnemy* Enemy = Cast<AOrbArenaEnemy>(Actor);
+
+		if (!IsValid(Enemy))
+		{
+			continue;
+		}
+
+		float Distance = FVector::Dist(GetActorLocation(), Enemy->GetActorLocation());
+
+		if (NearestEnemy == nullptr || Distance < NearestDistance)
+		{
+			NearestEnemy = Enemy;
+			NearestDistance = Distance;
+		}
+	}
+
+	if (IsValid(NearestEnemy))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Dealing %f damage to %s"), PlayerStats.Damage, *NearestEnemy->GetName());
+		NearestEnemy->ApplyDamageAmount(PlayerStats.Damage);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No enemy found."));
 	}
 }
 
 void AOrbArenaCharacter::UpdateMovementSpeed()
 {
+	if (GameState != EGameState::Playing)
+	{
+		return;
+	}
+
 	float DifficultyMultiplier = MovementMultiplierEasy;
 
 	if (GameDifficulty == EGameDifficulty::Medium)
@@ -144,18 +210,25 @@ void AOrbArenaCharacter::UpdateMovementSpeed()
 	}
 
 	float ActiveSprintMultiplier = 1.f;
+
 	if (bIsSprinting)
 	{
 		ActiveSprintMultiplier = SprintMultiplier;
 	}
 
-	CurrentMovementSpeed = BaseMovementSpeed * DifficultyMultiplier * ActiveSprintMultiplier;
+	CurrentMovementSpeed = PlayerStats.MovementSpeed * DifficultyMultiplier * ActiveSprintMultiplier;
+	CurrentMovementSpeed = FMath::Max(CurrentMovementSpeed, 0.f);
 
 	GetCharacterMovement()->MaxWalkSpeed = CurrentMovementSpeed;
 }
 
 void AOrbArenaCharacter::AddScore(int32 InAmount)
 {
+	if (GameState != EGameState::Playing)
+	{
+		return;
+	}
+
 	Score += InAmount;
 
 	if (Score > 1000)
@@ -174,27 +247,48 @@ void AOrbArenaCharacter::AddScore(int32 InAmount)
 	UpdateMovementSpeed();
 
 	UE_LOG(LogTemp, Warning, TEXT("New score is %d"), Score);
+	CheckGameState();
 }
 
 void AOrbArenaCharacter::HealPlayer(float InAmount)
 {
-	Health += InAmount;
-	Health = FMath::Clamp(Health, 0, MaxHealth);
+	if (GameState != EGameState::Playing)
+	{
+		return;
+	}
 
-	UE_LOG(LogTemp, Warning, TEXT("Player healed, new Health is %.2f"), Health);
+	PlayerStats.Health += FMath::Max(InAmount, 0.f);
+	PlayerStats.Health = FMath::Clamp(PlayerStats.Health, 0, PlayerStats.MaxHealth);
+
+	UE_LOG(LogTemp, Warning, TEXT("Player healed, new Health is %.2f"), PlayerStats.Health);
 }
 
 void AOrbArenaCharacter::ApplyDamageAmount(float InAmount)
 {
-	Health -= InAmount;
-	Health = FMath::Clamp(Health, 0, MaxHealth);
-
-	UE_LOG(LogTemp, Warning, TEXT("Player damaged, new Health is %.2f"), Health);
-
-	if (MaxHealth > 0.f && Health / MaxHealth <= 0.25f)
+	if (GameState != EGameState::Playing)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Emerald, FString::Printf(TEXT("LOW HEALTH!!!")));
+		return;
 	}
+
+	PlayerStats.Health -= FMath::Max(InAmount, 0.f);
+	PlayerStats.Health = FMath::Clamp(PlayerStats.Health, 0.f, PlayerStats.MaxHealth);
+
+	UE_LOG(LogTemp, Warning, TEXT("Player damaged, new Health is %.2f"), PlayerStats.Health);
+
+	if (PlayerStats.MaxHealth > 0.f && PlayerStats.Health <= PlayerStats.MaxHealth * 0.25f)
+	{
+		if (GEngine != nullptr)
+		{
+			GEngine->AddOnScreenDebugMessage(30, 2.f, FColor::Red, TEXT("LOW HEALTH!!!"));
+		}
+	}
+
+	if (PlayerStats.Health <= 0.f && PlayerLives > 0)
+	{
+		LoseLife();
+	}
+
+	CheckGameState();
 }
 
 void AOrbArenaCharacter::LoseLife()
@@ -202,28 +296,111 @@ void AOrbArenaCharacter::LoseLife()
 	PlayerLives -= 1;
 	PlayerLives = FMath::Max(PlayerLives, 0);
 
-	if (PlayerLives == 0)
+	UE_LOG(LogTemp, Warning, TEXT("Player died! Lives remaining: %d"), PlayerLives);
+
+	if (PlayerLives > 0)
+	{
+		PlayerStats.Health = PlayerStats.MaxHealth;
+	}
+	else
 	{
 		GameState = EGameState::Lost;
+		GetCharacterMovement()->StopMovementImmediately();
 		UE_LOG(LogTemp, Warning, TEXT("GAME OVER!!"));
-		return;
+	}
+}
+
+// Session 7 - Finding every orb
+void AOrbArenaCharacter::FindEnergyOrbs()
+{
+	EnergyOrbArray.Empty();
+
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AOrbArenaEnergyOrb::StaticClass(), FoundActors);
+
+	for (AActor* Actor : FoundActors)
+	{
+		AOrbArenaEnergyOrb* Orb = Cast<AOrbArenaEnergyOrb>(Actor);
+
+		if (IsValid(Orb))
+		{
+			EnergyOrbArray.Add(Orb);
+		}
 	}
 
-	Health = MaxHealth;
-	UE_LOG(LogTemp, Warning, TEXT("Player died! Current lives: %d"), PlayerLives);
+	StartingOrbCount = EnergyOrbArray.Num();
+	bAllOrbsCollected = false;
+	UpdateRemainingOrbCount();
 }
+
+void AOrbArenaCharacter::UpdateRemainingOrbCount()
+{
+	// Subtracting one orb from the Energy Orb Array
+	for (int32 Index = EnergyOrbArray.Num() - 1; Index >= 0; Index--)
+	{
+		// We use IsValid here because orb can be destroyed while it is stil referencing it
+		// First we check if the orb still exists. Only if it does exist we check if it has been picked up
+		if (!IsValid(EnergyOrbArray[Index]) || EnergyOrbArray[Index]->bHasBeenPickedUp)
+		{
+			EnergyOrbArray.RemoveAt(Index);
+		}
+	}
+
+	OrbsRemaining = EnergyOrbArray.Num();
+	UE_LOG(LogTemp, Warning, TEXT("Orbs remaining: %d"), OrbsRemaining);
+
+	// Checking if we collected all the orbs, and that it does instantly win if the map has no orbs in it from start
+	if (StartingOrbCount > 0 && OrbsRemaining == 0 && !bAllOrbsCollected)
+	{
+		bAllOrbsCollected = true;
+		UE_LOG(LogTemp, Warning, TEXT("All Orbs collected!"));
+		CheckGameState();
+	}
+}
+
+void AOrbArenaCharacter::PrintLootDrops()
+{
+	for (AOrbArenaEnergyOrb* Orb : EnergyOrbArray)
+	{
+		// FString RarityName = TEXT("Common");
+		//
+		// if (Orb->OrbLootDrop.Rarity == ELootRarity::Rare)
+		// {
+		// 	RarityName = TEXT("Rare");
+		// }
+		// else if (Orb->OrbLootDrop.Rarity == ELootRarity::Epic)
+		// {
+		// 	RarityName = TEXT("Epic");
+		// }
+		
+		FString RarityName = StaticEnum<ELootRarity>()->GetNameStringByValue(static_cast<int64>(Orb->OrbLootDrop.Rarity));
+
+		UE_LOG(LogTemp, Warning, TEXT("Loot: %s | Rarity: %s | Value: %d"), *Orb->OrbLootDrop.ItemName, *RarityName, Orb->OrbLootDrop.Value);
+	}
+}
+
 
 void AOrbArenaCharacter::CheckGameState()
 {
-	if (PlayerLives == 0)
+	if (GameState != EGameState::Playing)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GAME OVER!!"));
+		return;
+	}
+
+	if (PlayerLives <= 0)
+	{
 		GameState = EGameState::Lost;
+		UE_LOG(LogTemp, Warning, TEXT("GAME OVER!!"));
 	}
 	else if (Score >= ScoreWinCondition)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("YOU WON!!!"));
 		GameState = EGameState::Won;
+		UE_LOG(LogTemp, Warning, TEXT("YOU WON!!!"));
+	}
+	else if (bWinWhenAllOrbsCollected && bAllOrbsCollected)
+	{
+		GameState = EGameState::Won;
+		UE_LOG(LogTemp, Warning, TEXT("YOU WON: all Orbs collected!"));
 	}
 }
 
@@ -270,10 +447,10 @@ void AOrbArenaCharacter::PrintTextToScreen()
 	GEngine->AddOnScreenDebugMessage(DebugKey, 0.1f, FColor::Cyan, FString::Printf(TEXT("----------------------")));
 	DebugKey++;
 
-	GEngine->AddOnScreenDebugMessage(DebugKey, 0.1f, FColor::Red, FString::Printf(TEXT("Health is: %.2f"), Health));
+	GEngine->AddOnScreenDebugMessage(DebugKey, 0.1f, FColor::Red, FString::Printf(TEXT("Health is: %.2f"), PlayerStats.Health));
 	DebugKey++;
 
-	GEngine->AddOnScreenDebugMessage(DebugKey, 0.1f, FColor::Red, FString::Printf(TEXT("Max Health is: %.2f"), MaxHealth));
+	GEngine->AddOnScreenDebugMessage(DebugKey, 0.1f, FColor::Red, FString::Printf(TEXT("Max Health is: %.2f"), PlayerStats.MaxHealth));
 	DebugKey++;
 
 	if (CurrentMovementSpeed >= 2000.f)
@@ -286,105 +463,81 @@ void AOrbArenaCharacter::PrintTextToScreen()
 	}
 }
 
-// void AOrbArenaCharacter::CheckKeyPressed()
+// EXERCISES - USE AS EXAMPLES ----------------------------------- //
+// void AOrbArenaCharacter::RunArrayExercises()
 // {
-// 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+// 	// For-loop printing highest score
+// 	if (ExampleScores.Num() > 0)
 // 	{
-// 		if (PC->IsInputKeyDown(EKeys::One))
+// 		int HighestScore = 0;
+//
+// 		for (int32 Index = 0; Index < ExampleScores.Num(); Index++)
 // 		{
-// 			ApplyDamageAmount(TempDamage);
+// 			if (ExampleScores[Index] > HighestScore)
+// 			{
+// 				HighestScore = ExampleScores[Index];
+// 			}
 // 		}
 //
-// 		if (PC->IsInputKeyDown(EKeys::Two))
-// 		{
-// 			HealPlayer(TempHeal);
-// 		}
+// 		UE_LOG(LogTemp, Warning, TEXT("Highest score: %d"), HighestScore);
+// 	}
 //
-// 		if (PC->IsInputKeyDown(EKeys::Three))
+// 	// Range-based loop printing every name.
+// 	for (FString Name : ExampleOrbNames)
+// 	{
+// 		UE_LOG(LogTemp, Warning, TEXT("Orb name: %s"), *Name);
+// 	}
+//
+// 	// Range-based loop searching for the input of "OrbNameToFind".
+// 	bool bFoundName = false;
+//
+// 	for (FString Name : ExampleOrbNames)
+// 	{
+// 		if (Name == OrbNameToFind)
 // 		{
-// 			AddScore(TempPoints);
+// 			bFoundName = true;
+// 			break;
 // 		}
+// 	}
+// 	if (bFoundName)
+// 	{
+// 		UE_LOG(LogTemp, Warning, TEXT("Found Orb name: %s"), *OrbNameToFind);
+// 	}
+// 	else
+// 	{
+// 		UE_LOG(LogTemp, Warning, TEXT("Orb name not found: %s"), *OrbNameToFind);
 // 	}
 // }
 //
-// //Mathematical usage of vector concept
-// void AOrbArenaCharacter::MovePlayer(float DeltaTime)
+// void AOrbArenaCharacter::PrintStructExercise()
 // {
-// 	//TODO: take the input direction, make it length 1, multiply it by how fast the player should move and how much time passed, then add that small movement to the player’s current position.
+// 	UE_LOG(LogTemp, Warning,
+// 		   TEXT("Player Stats: Health %.1f / %.1f, Speed %.1f, Damage %.1f"),
+// 		   PlayerStats.Health,
+// 		   PlayerStats.MaxHealth,
+// 		   PlayerStats.MovementSpeed,
+// 		   PlayerStats.Damage);
+// }
 //
-// 	FVector MoveDirection = FVector::ZeroVector;
-//
-// 	// Current player location - p = (x,y,z)
-// 	FVector CurrentLocation = GetActorLocation();
-//
-// 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+// FLootDrop AOrbArenaCharacter::GetHighestValueLootDrop()
+// {
+// 	if (LootDrops.Num() == 0)
 // 	{
-// 		// X axis = forward/backward in world space
-// 		if (PC->IsInputKeyDown(EKeys::W))
-// 		{
-// 			MoveDirection.X += 1.f;
-// 		}
+// 		UE_LOG(LogTemp, Warning, TEXT("No loot"));
+// 		return FLootDrop();
+// 	}
 //
-// 		if (PC->IsInputKeyDown(EKeys::S))
-// 		{
-// 			MoveDirection.X -= 1.f;
-// 		}
+// 	FLootDrop HighestDrop;
 //
-// 		// Y axis = left/right in world space
-// 		if (PC->IsInputKeyDown(EKeys::D))
+// 	for (int32 Index = 0; Index < LootDrops.Num(); Index++)
+// 	{
+// 		if (LootDrops[Index].Value > HighestDrop.Value)
 // 		{
-// 			MoveDirection.Y += 1.f;
-// 		}
-//
-// 		if (PC->IsInputKeyDown(EKeys::A))
-// 		{
-// 			MoveDirection.Y -= 1.f;
+// 			HighestDrop = LootDrops[Index];
 // 		}
 // 	}
 //
-// 	// Pressing W gives d = (1,0,0)
-// 	// Pressing W and D together gives d = (1,1,0)
-// 	// Normalize to prevent diagonal movement from being 41% faster.
-// 	MoveDirection = MoveDirection.GetSafeNormal();
-//
-// 	// Distance = direction × speed × time
-// 	const FVector MovementThisFrame = MoveDirection * CurrentMovementSpeed * DeltaTime;
-//
-// 	// New position = old position + movement
-// 	const FVector NewLocation = CurrentLocation + MovementThisFrame;
-//
-// 	SetActorLocation(NewLocation);
+// 	return HighestDrop;
 // }
-//
-// void AOrbArenaCharacter::PlayerSprint()
-// {
-// 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
-// 	{
-// 		bIsSprinting = PC->IsInputKeyDown(EKeys::LeftShift);
-//
-// 		float DifficultyMultiplier = MovementMultiplierEasy;
-//
-// 		if (GameDifficulty == EGameDifficulty::Medium)
-// 		{
-// 			DifficultyMultiplier = MovementMultiplierMedium;
-// 		}
-// 		else if (GameDifficulty == EGameDifficulty::Hard)
-// 		{
-// 			DifficultyMultiplier = MovementMultiplierHard;
-// 		}
-//
-// 		float ActiveSprintMultiplier;
-// 		if (bIsSprinting)
-// 		{
-// 			ActiveSprintMultiplier = SprintMultiplier;
-// 		}
-// 		else
-// 		{
-// 			ActiveSprintMultiplier = 1.f;
-// 		}
-//
-// 		CurrentMovementSpeed = BaseMovementSpeed * DifficultyMultiplier * ActiveSprintMultiplier;
-//
-// 		GetCharacterMovement()->MaxWalkSpeed = CurrentMovementSpeed;
-// 	}
-// }
+
+// END EXERCISE -------------------------------------------

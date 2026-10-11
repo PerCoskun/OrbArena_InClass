@@ -7,6 +7,8 @@
 #include "EnhancedInputSubsystems.h"
 #include "OrbArenaCharacter.generated.h"
 
+class AOrbArenaEnergyOrb;
+
 UENUM()
 enum class EGameState : uint8
 {
@@ -15,9 +17,6 @@ enum class EGameState : uint8
 	Lost
 };
 
-/*
- * Advance Task
- */
 UENUM()
 enum class EGameDifficulty : uint8
 {
@@ -26,22 +25,36 @@ enum class EGameDifficulty : uint8
 	Hard
 };
 
+USTRUCT(BlueprintType)
+struct FPlayerStats
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float Health = 100.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float MaxHealth = 100.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float MovementSpeed = 500.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float Damage = 10.f;
+};
+
 UCLASS()
 class ORBARENA_API AOrbArenaCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	AOrbArenaCharacter();
 
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	/*
@@ -57,13 +70,7 @@ public:
 	int32 PlayerLives = 5;
 
 	UPROPERTY(EditAnywhere, Category = "Player|Stats")
-	float Health = 100.f;
-
-	UPROPERTY(EditAnywhere, Category = "Player|Stats")
-	float MaxHealth = 100.f;
-
-	UPROPERTY(EditAnywhere, Category = "Player|Stats")
-	float BaseMovementSpeed = 500.f;
+	FPlayerStats PlayerStats;
 
 	/*
 	 * System Variables
@@ -78,6 +85,9 @@ public:
 	EGameState GameState = EGameState::Playing;
 
 	UPROPERTY(EditAnywhere, Category = "System|Difficulty")
+	EGameDifficulty GameDifficulty = EGameDifficulty::Easy;
+
+	UPROPERTY(EditAnywhere, Category = "System|Difficulty")
 	float MovementMultiplierEasy = 1.f;
 
 	UPROPERTY(EditAnywhere, Category = "System|Difficulty")
@@ -90,12 +100,36 @@ public:
 	float CurrentMovementSpeed = 500.f;
 
 	/*
-	* Advance Task
+	 * Orb Loot
 	 */
-	UPROPERTY(EditAnywhere, Category = "System")
-	EGameDifficulty GameDifficulty = EGameDifficulty::Easy;
+	UPROPERTY(VisibleAnywhere, Category = "Orbs")
+	TArray<AOrbArenaEnergyOrb*> EnergyOrbArray;
 
-	// Temp Variables
+	UPROPERTY(VisibleAnywhere, Category = "Orbs")
+	int32 OrbsRemaining = 0;
+
+	UPROPERTY(EditAnywhere, Category = "Orbs")
+	bool bWinWhenAllOrbsCollected = false;
+
+	// EXERCISES - USE AS EXAMPLES ----------------------------------- //
+	// UPROPERTY(EditAnywhere, Category = "Exercises|Arrays")
+	// TArray<int32> ExampleScores;
+	//
+	// UPROPERTY(EditAnywhere, Category = "Exercises|Arrays")
+	// TArray<FString> ExampleOrbNames;
+	// 
+	// UPROPERTY(EditAnywhere, Category = "Exercises|Arrays")
+	// FString OrbNameToFind = TEXT("Green Orb");
+	// UPROPERTY(EditAnywhere, Category = "Orbs|Loot")
+	// TArray<FLootDrop> LootDrops;
+	//----------------
+
+
+	// Helpers
+	int32 StartingOrbCount = 0;
+	bool bAllOrbsCollected = false;
+
+
 	UPROPERTY(EditAnywhere, Category = "Player|Temp")
 	float TempDamage = 2.f;
 
@@ -131,35 +165,40 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	UInputAction* AddScoreAction;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* DamageEnemyAction;
+
 	/*
 	 * Player Functions
 	 */
 	void MovePlayer(const FInputActionValue& Value);
 	void StartSprint();
 	void StopSprint();
-
 	void UpdateMovementSpeed();
 
 	void DamageInput();
 	void HealInput();
 	void AddScoreInput();
+	void DamageNearestEnemyInput();
 
 	/*
-	 * Player Functions
+	* System Functions
 	*/
 	void AddScore(int32 InAmount);
 	void HealPlayer(float InAmount);
 	void ApplyDamageAmount(float InAmount);
 	void LoseLife();
 
-	/*
-	* System Functions
-	*/
+	void FindEnergyOrbs();
+	void UpdateRemainingOrbCount();
+
+	void PrintLootDrops();
 	void PrintTextToScreen();
 	void CheckGameState();
 	void PrintPlayerLocation();
 
-	// void CheckKeyPressed();
-	// void MovePlayer(float DeltaTime);
-	// void PlayerSprint();
+	// EXERCISES - USE AS EXAMPLES ----------------------------------- //
+	// void RunArrayExercises();
+	// void PrintStructExercise();
+	// FLootDrop GetHighestValueLootDrop();
 };
