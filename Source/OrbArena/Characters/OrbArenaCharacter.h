@@ -80,7 +80,7 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "System")
 	int32 ScoreWinCondition = 50000;
-
+	
 	UPROPERTY(EditAnywhere, Category = "System")
 	EGameState GameState = EGameState::Playing;
 

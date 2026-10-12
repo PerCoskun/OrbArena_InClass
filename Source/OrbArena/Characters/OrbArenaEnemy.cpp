@@ -31,6 +31,8 @@ void AOrbArenaEnemy::Tick(float DeltaTime)
 	// Simple count down using delta time (seconds)
 	AttackCooldownRemaining = FMath::Max(AttackCooldownRemaining - DeltaTime, 0.f);
 
+	UpdateVisionAndTurning(DeltaTime);
+	
 	AttackPlayer();
 	Debugging();
 }
@@ -93,4 +95,37 @@ void AOrbArenaEnemy::Debugging()
 	DrawDebugSphere(GetWorld(), Location, EnemyStats.AttackRange, 16, DebugColor, false, 0.f, 0, 2.f);
 
 	DrawDebugDirectionalArrow(GetWorld(), Location, Location + GetActorForwardVector() * 150.f, 30.f, DebugColor, false, 0.f, 0, 3.f);
+}
+
+void AOrbArenaEnemy::UpdateVisionAndTurning(float DeltaTime)
+{
+	FVector VectorToPlayer = PlayerCharacter->GetActorLocation() - GetActorLocation();
+	VectorToPlayer.Z = 0.f;
+	FVector ToPlayerDirection = VectorToPlayer.GetSafeNormal();
+	
+	FVector EnemyForwardVector = GetActorForwardVector();
+	EnemyForwardVector.Z  = 0.f;
+	EnemyForwardVector = EnemyForwardVector.GetSafeNormal();
+	
+	// Dot Product
+	DotProductValue = FVector::DotProduct(EnemyForwardVector, ToPlayerDirection);
+	bCanSeePlayer = DotProductValue > DotProductValueToSeePlayer;
+	
+	if (!bCanSeePlayer)
+	{
+		return;
+	}
+	
+	// Cross Product
+	CrossProductValue = FVector::CrossProduct(EnemyForwardVector, ToPlayerDirection);
+	
+	float TurnDirection = 1.f;
+	
+	if (CrossProductValue.Z < 0.f)
+	{
+		TurnDirection = -1.f;
+	}
+	
+	float TurnAmount = TurnDirection * TurnSpeed * DeltaTime;
+	AddActorLocalRotation(FRotator(0.f, TurnAmount, 0.f));
 }

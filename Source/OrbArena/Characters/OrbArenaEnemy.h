@@ -29,7 +29,7 @@ struct FEnemyStats
 	float Damage = 10.f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-	float AttackCooldown = 2.f;	
+	float AttackCooldown = 2.f;
 };
 
 UCLASS()
@@ -49,9 +49,6 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, Category = "Enemy|Info")
 	FString EnemyName = "Enemy";
-	
-	UPROPERTY(EditAnywhere, Category = "Enemy|Info")
-	bool bDrawDebug = true;
 
 	UPROPERTY(EditAnywhere, Category = "Enemy|Stats")
 	FEnemyStats EnemyStats;
@@ -63,7 +60,39 @@ public:
 	UPROPERTY()
 	AOrbArenaCharacter* PlayerCharacter = nullptr;
 	
+	/*
+	 * AI Variables
+	 */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Vision", meta = (ClampMin = "-1.0", ClampMax = "1.0"))
+	float DotProductValueToSeePlayer = 0.5f;
+	
+	UPROPERTY(VisibleAnywhere, Category = "Enemy|Vision")
+	float DotProductValue = 0.f;
+	
+	UPROPERTY(VisibleAnywhere, Category = "Enemy|Vision")
+	FVector CrossProductValue = FVector(0.f, 0.f, 0.f);
+	
+	UPROPERTY(VisibleAnywhere, Category = "Enemy|Vision")
+	bool bCanSeePlayer = false;
+	
+	UPROPERTY(EditAnywhere, Category = "Enemy|Vision")
+	float TurnSpeed = 90.f;
+	
+	UPROPERTY(EditAnywhere, Category = "Enemy|Vision")
+	bool bRequireVisionToTurn = true;
+	
+	/*
+	 * Debugging
+	 */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Debug")
+	bool bDrawDebug = true;
+	
+	/*
+	 * Functions
+	 */
 	void AttackPlayer();
 	void ApplyDamageAmount(float InAmount);
 	void Debugging();
+	
+	void UpdateVisionAndTurning(float DeltaTime);
 };
