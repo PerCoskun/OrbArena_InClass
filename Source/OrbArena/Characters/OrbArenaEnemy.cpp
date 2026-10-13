@@ -28,11 +28,15 @@ void AOrbArenaEnemy::Tick(float DeltaTime)
 		return;
 	}
 
-	// Simple count down using delta time (seconds)
 	AttackCooldownRemaining = FMath::Max(AttackCooldownRemaining - DeltaTime, 0.f);
 
 	UpdateVisionAndTurning(DeltaTime);
-	
+
+	if (bMoveTowardsPlayer)
+	{
+		MoveTowardsPlayer(DeltaTime);
+	}
+
 	AttackPlayer();
 	Debugging();
 }
@@ -51,14 +55,13 @@ void AOrbArenaEnemy::AttackPlayer()
 
 	float Distance = FVector::Dist(GetActorLocation(), PlayerCharacter->GetActorLocation());
 
-	if (Distance <= EnemyStats.AttackRange)
+	if (Distance <= EnemyStats.AttackRange && bCanSeePlayer)
 	{
 		PlayerCharacter->ApplyDamageAmount(EnemyStats.Damage);
-		
-		// Reset timer after dealing damage (each enemy has its own cooldown).
+
 		AttackCooldownRemaining = EnemyStats.AttackCooldown;
 
-		UE_LOG(LogTemp, Warning, TEXT("%s attacked %s for %.1f damage."), *EnemyName, *PlayerCharacter->PlayerName ,EnemyStats.Damage);
+		UE_LOG(LogTemp, Warning, TEXT("%s attacked %s for %.1f damage."), *EnemyName, *PlayerCharacter->PlayerName, EnemyStats.Damage);
 	}
 }
 
@@ -90,6 +93,11 @@ void AOrbArenaEnemy::Debugging()
 
 	FColor DebugColor = FColor::Red;
 
+	if (bCanSeePlayer)
+	{
+		DebugColor = FColor::Green;
+	}
+
 	FVector Location = GetActorLocation() - FVector(0.f, 0.f, 45.f);
 
 	DrawDebugSphere(GetWorld(), Location, EnemyStats.AttackRange, 16, DebugColor, false, 0.f, 0, 2.f);
@@ -99,33 +107,68 @@ void AOrbArenaEnemy::Debugging()
 
 void AOrbArenaEnemy::UpdateVisionAndTurning(float DeltaTime)
 {
-	FVector VectorToPlayer = PlayerCharacter->GetActorLocation() - GetActorLocation();
-	VectorToPlayer.Z = 0.f;
-	FVector ToPlayerDirection = VectorToPlayer.GetSafeNormal();
-	
-	FVector EnemyForwardVector = GetActorForwardVector();
-	EnemyForwardVector.Z  = 0.f;
-	EnemyForwardVector = EnemyForwardVector.GetSafeNormal();
-	
+	FVector ToPlayer = PlayerCharacter->GetActorLocation() - GetActorLocation();
+	ToPlayer.Z = 0.f;
+	FVector ToPlayerDirection = ToPlayer.GetSafeNormal();
+
+	FVector EnemyForward = GetActorForwardVector();
+	EnemyForward.Z = 0.f;
+	EnemyForward = EnemyForward.GetSafeNormal();
+
 	// Dot Product
-	DotProductValue = FVector::DotProduct(EnemyForwardVector, ToPlayerDirection);
+	DotProductValue = FVector::DotProduct(EnemyForward, ToPlayerDirection);
 	bCanSeePlayer = DotProductValue > DotProductValueToSeePlayer;
-	
-	if (!bCanSeePlayer)
+
+	if (bLogDotCrossProduct)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s | Dot: %.3f | Cross: %.3f"), *EnemyName, DotProductValue, FVector::CrossProduct(EnemyForward, ToPlayerDirection).Z);
+	}
+
+	if (bRequireVisionToTurn && !bCanSeePlayer)
 	{
 		return;
 	}
-	
+
+	if (DotProductValue > DotProductValueToStopTurning)
+	{
+		return;
+	}
+
 	// Cross Product
-	CrossProductValue = FVector::CrossProduct(EnemyForwardVector, ToPlayerDirection);
-	
+	CrossProductValue = FVector::CrossProduct(EnemyForward, ToPlayerDirection);
+
 	float TurnDirection = 1.f;
-	
+
 	if (CrossProductValue.Z < 0.f)
 	{
 		TurnDirection = -1.f;
 	}
-	
+
 	float TurnAmount = TurnDirection * TurnSpeed * DeltaTime;
 	AddActorLocalRotation(FRotator(0.f, TurnAmount, 0.f));
+}
+
+void AOrbArenaEnemy::MoveTowardsPlayer(float DeltaTime)
+{
+	if (!bCanSeePlayer)
+	{
+		return;
+	}
+
+	FVector ToPlayer = PlayerCharacter->GetActorLocation() - GetActorLocation();
+	ToPlayer.Z = 0.f;
+
+	float Distance = ToPlayer.Size();
+
+	if (Distance <= EnemyStats.AttackRange)
+	{
+		return;
+	}
+
+	FVector Direction = ToPlayer.GetSafeNormal();
+	float MoveDistance = FMath::Max(EnemyStats.MovementSpeed, 0.f) * DeltaTime;
+
+	MoveDistance = FMath::Min(MoveDistance, Distance - EnemyStats.AttackRange);
+
+	SetActorLocation(GetActorLocation() + Direction * MoveDistance);
 }

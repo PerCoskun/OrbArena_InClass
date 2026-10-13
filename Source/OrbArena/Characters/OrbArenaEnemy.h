@@ -20,14 +20,14 @@ struct FEnemyStats
 	float MaxHealth = 100.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-	float MovementSpeed = 500.f;
-
+	float MovementSpeed = 300.f;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
 	float AttackRange = 250.f;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
 	float Damage = 10.f;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
 	float AttackCooldown = 2.f;
 };
@@ -43,7 +43,7 @@ public:
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaTime) override;
-	
+
 	/*
 	 * Enemy Variables
 	 */
@@ -55,16 +55,15 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = "Enemy|Attack")
 	float AttackCooldownRemaining = 0.f;
-	
-	// Helpers
-	UPROPERTY()
-	AOrbArenaCharacter* PlayerCharacter = nullptr;
-	
+
 	/*
 	 * AI Variables
 	 */
-	UPROPERTY(EditAnywhere, Category = "Enemy|Vision", meta = (ClampMin = "-1.0", ClampMax = "1.0"))
+	UPROPERTY(EditAnywhere, Category = "Enemy|Vision",		meta = (ClampMin = "-1.0", ClampMax = "1.0"))
 	float DotProductValueToSeePlayer = 0.5f;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy|Vision")
+	float DotProductValueToStopTurning = 0.9f;
 	
 	UPROPERTY(VisibleAnywhere, Category = "Enemy|Vision")
 	float DotProductValue = 0.f;
@@ -74,25 +73,36 @@ public:
 	
 	UPROPERTY(VisibleAnywhere, Category = "Enemy|Vision")
 	bool bCanSeePlayer = false;
-	
-	UPROPERTY(EditAnywhere, Category = "Enemy|Vision")
+
+	UPROPERTY(EditAnywhere, Category = "Enemy|Turning")
 	float TurnSpeed = 90.f;
-	
-	UPROPERTY(EditAnywhere, Category = "Enemy|Vision")
+
+	UPROPERTY(EditAnywhere, Category = "Enemy|Turning")
 	bool bRequireVisionToTurn = true;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy|Movement")
+	bool bMoveTowardsPlayer = false;
 	
 	/*
 	 * Debugging
 	 */
 	UPROPERTY(EditAnywhere, Category = "Enemy|Debug")
+	bool bLogDotCrossProduct = true;
+	
+	UPROPERTY(EditAnywhere, Category = "Enemy|Info")
 	bool bDrawDebug = true;
 	
+	// Helpers
+	UPROPERTY()
+	AOrbArenaCharacter* PlayerCharacter = nullptr;
+
 	/*
-	 * Functions
-	 */
+	* Functions
+	*/
 	void AttackPlayer();
 	void ApplyDamageAmount(float InAmount);
 	void Debugging();
 	
 	void UpdateVisionAndTurning(float DeltaTime);
+	void MoveTowardsPlayer(float DeltaTime);
 };
