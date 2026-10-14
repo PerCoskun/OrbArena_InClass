@@ -124,11 +124,21 @@ public:
 	// TArray<FLootDrop> LootDrops;
 	//----------------
 
-
+	/*
+	 * Combat
+	 */
+	UPROPERTY(EditAnywhere, Category = "Player|Combat")
+	TSubclassOf<AActor> ProjectileBlueprint;
+	
+	UPROPERTY(EditAnywhere, Category = "Player|Combat")
+	float ProjectileOffset = 45.f;
+	
 	// Helpers
 	int32 StartingOrbCount = 0;
 	bool bAllOrbsCollected = false;
-
+	UPROPERTY()
+	APlayerController* ArenaPlayerController;
+	
 
 	UPROPERTY(EditAnywhere, Category = "Player|Temp")
 	float TempDamage = 2.f;
@@ -180,6 +190,8 @@ public:
 	void HealInput();
 	void AddScoreInput();
 	void DamageNearestEnemyInput();
+	
+	void ShootProjectile();
 
 	/*
 	* System Functions

@@ -58,6 +58,8 @@ void AOrbArenaCharacter::BeginPlay()
 
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
+		ArenaPlayerController = PlayerController;
+		
 		if (ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer())
 		{
 			if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem =
@@ -106,7 +108,7 @@ void AOrbArenaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 	EnhancedInputComponent->BindAction(AddScoreAction, ETriggerEvent::Triggered, this, &AOrbArenaCharacter::AddScoreInput);
 
-	EnhancedInputComponent->BindAction(DamageEnemyAction, ETriggerEvent::Started, this, &AOrbArenaCharacter::DamageNearestEnemyInput);
+	EnhancedInputComponent->BindAction(DamageEnemyAction, ETriggerEvent::Started, this, &AOrbArenaCharacter::ShootProjectile);
 }
 
 void AOrbArenaCharacter::MovePlayer(const FInputActionValue& Value)
@@ -189,6 +191,39 @@ void AOrbArenaCharacter::DamageNearestEnemyInput()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No enemy found."));
 	}
+}
+
+void AOrbArenaCharacter::ShootProjectile()
+{
+	if (GameState != EGameState::Playing)
+	{
+		return;
+	}
+	
+	// Getting and storing the cursor hit information
+	FHitResult CursorHit;
+	ArenaPlayerController->GetHitResultUnderCursor(ECC_Visibility, false, CursorHit);
+	
+	// Setting the direction of the projectile
+	FVector ShootDirection = CursorHit.ImpactPoint - GetActorLocation();
+	ShootDirection.Z = 0.f;
+	ShootDirection = ShootDirection.GetSafeNormal();
+	
+	// Spawn the projectile
+	FVector SpawnLocation = GetActorLocation() + ShootDirection * ProjectileOffset;
+	
+	FRotator SpawnRotation = ShootDirection.Rotation();
+	
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	
+	AActor* Projectile = GetWorld()->SpawnActor<AActor>(
+		ProjectileBlueprint,
+		SpawnLocation,
+		SpawnRotation,
+		SpawnParameters
+		);
+	
 }
 
 void AOrbArenaCharacter::UpdateMovementSpeed()
@@ -372,7 +407,7 @@ void AOrbArenaCharacter::PrintLootDrops()
 		// {
 		// 	RarityName = TEXT("Epic");
 		// }
-		
+
 		FString RarityName = StaticEnum<ELootRarity>()->GetNameStringByValue(static_cast<int64>(Orb->OrbLootDrop.Rarity));
 
 		UE_LOG(LogTemp, Warning, TEXT("Loot: %s | Rarity: %s | Value: %d"), *Orb->OrbLootDrop.ItemName, *RarityName, Orb->OrbLootDrop.Value);
