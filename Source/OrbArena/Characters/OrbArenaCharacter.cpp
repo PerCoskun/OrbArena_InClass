@@ -60,6 +60,8 @@ void AOrbArenaCharacter::BeginPlay()
 	{
 		ArenaPlayerController = PlayerController;
 		
+		ArenaPlayerController->SetShowMouseCursor(true);
+		
 		if (ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer())
 		{
 			if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem =
