@@ -9,6 +9,9 @@
 
 class AOrbArenaProjectile;
 class AOrbArenaEnergyOrb;
+class UWidgetComponent;
+class UOrbArenaHUDWidget;
+class UOrbArenaEndScreenWidget;
 
 UENUM()
 enum class EGameState : uint8
@@ -184,6 +187,18 @@ public:
 	UInputAction* DamageEnemyAction;
 
 	/*
+	 * UI
+	 */
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UOrbArenaHUDWidget> HUDWidgetClass;
+	
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UOrbArenaEndScreenWidget> EndScreenWidgetClass;		
+	
+	UPROPERTY(EditAnywhere, Category = "UI")
+	UWidgetComponent* HealthBar;
+	
+	/*
 	 * Player Functions
 	 */
 	void MovePlayer(const FInputActionValue& Value);
@@ -205,6 +220,9 @@ public:
 	void HealPlayer(float InAmount);
 	void ApplyDamageAmount(float InAmount);
 	void LoseLife();
+	
+	// UI related functions
+	void UpdateHealthBar();
 
 	void FindEnergyOrbs();
 	void UpdateRemainingOrbCount();

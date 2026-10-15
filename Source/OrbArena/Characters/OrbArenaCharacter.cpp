@@ -5,16 +5,24 @@
 
 #include "EnhancedInputComponent.h"
 #include "OrbArenaEnemy.h"
+#include "Components/WidgetComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "OrbArena/Objects/OrbArenaEnergyOrb.h"
 #include "OrbArena/Objects/OrbArenaProjectile.h"
+#include "OrbArena/UI/OrbArenaHealthBarWidget.h"
 
 // Sets default values
 AOrbArenaCharacter::AOrbArenaCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	HealthBar = CreateDefaultSubobject<UWidgetComponent>("HealthBar");
+	HealthBar->SetupAttachment(GetRootComponent());
+	HealthBar->SetWidgetSpace(EWidgetSpace::Screen);
+	HealthBar->SetDrawSize(FVector2D(80.f, 10.f));
+	HealthBar->SetRelativeLocation(FVector(32.f, 0.f, 50.f));
+	
 	// // Session 7 - Arrays -- Use as an example
 	// ExampleScores.Add(100);
 	// ExampleScores.Add(450);
@@ -56,6 +64,7 @@ void AOrbArenaCharacter::BeginPlay()
 	UpdateMovementSpeed();
 	FindEnergyOrbs();
 	PrintLootDrops();
+	UpdateHealthBar();
 
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
@@ -308,6 +317,7 @@ void AOrbArenaCharacter::HealPlayer(float InAmount)
 
 	PlayerStats.Health += FMath::Max(InAmount, 0.f);
 	PlayerStats.Health = FMath::Clamp(PlayerStats.Health, 0, PlayerStats.MaxHealth);
+	UpdateHealthBar();
 
 	UE_LOG(LogTemp, Warning, TEXT("Player healed, new Health is %.2f"), PlayerStats.Health);
 }
@@ -321,6 +331,8 @@ void AOrbArenaCharacter::ApplyDamageAmount(float InAmount)
 
 	PlayerStats.Health -= FMath::Max(InAmount, 0.f);
 	PlayerStats.Health = FMath::Clamp(PlayerStats.Health, 0.f, PlayerStats.MaxHealth);
+	
+	UpdateHealthBar();
 
 	UE_LOG(LogTemp, Warning, TEXT("Player damaged, new Health is %.2f"), PlayerStats.Health);
 
@@ -350,12 +362,23 @@ void AOrbArenaCharacter::LoseLife()
 	if (PlayerLives > 0)
 	{
 		PlayerStats.Health = PlayerStats.MaxHealth;
+		UpdateHealthBar();
 	}
 	else
 	{
 		GameState = EGameState::Lost;
 		GetCharacterMovement()->StopMovementImmediately();
 		UE_LOG(LogTemp, Warning, TEXT("GAME OVER!!"));
+	}
+}
+
+void AOrbArenaCharacter::UpdateHealthBar()
+{
+	UOrbArenaHealthBarWidget* HealthBarWidget = Cast<UOrbArenaHealthBarWidget>(HealthBar->GetUserWidgetObject());
+	
+	if (IsValid(HealthBarWidget))
+	{
+		HealthBarWidget->SetHealth(PlayerStats.Health, PlayerStats.MaxHealth);
 	}
 }
 
