@@ -7,6 +7,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "OrbArenaCharacter.generated.h"
 
+class AOrbArenaProjectile;
 class AOrbArenaEnergyOrb;
 
 UENUM()
@@ -80,7 +81,7 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "System")
 	int32 ScoreWinCondition = 50000;
-	
+
 	UPROPERTY(EditAnywhere, Category = "System")
 	EGameState GameState = EGameState::Playing;
 
@@ -124,21 +125,25 @@ public:
 	// TArray<FLootDrop> LootDrops;
 	//----------------
 
+
+	// Helpers
+	int32 StartingOrbCount = 0;
+	bool bAllOrbsCollected = false;
+	
+	UPROPERTY()
+	APlayerController* ArenaPlayerController;
+	
 	/*
 	 * Combat
 	 */
 	UPROPERTY(EditAnywhere, Category = "Player|Combat")
-	TSubclassOf<AActor> ProjectileBlueprint;
-	
+	TSubclassOf<AOrbArenaProjectile> ProjectileBlueprint;
+
 	UPROPERTY(EditAnywhere, Category = "Player|Combat")
-	float ProjectileOffset = 45.f;
-	
-	// Helpers
-	int32 StartingOrbCount = 0;
-	bool bAllOrbsCollected = false;
-	UPROPERTY()
-	APlayerController* ArenaPlayerController;
-	
+	float FireCooldown = 0.5f;
+
+	UPROPERTY(VisibleAnywhere, Category = "Player|Combat")
+	float RemainingFireCooldown = 0.f;
 
 	UPROPERTY(EditAnywhere, Category = "Player|Temp")
 	float TempDamage = 2.f;
@@ -190,7 +195,7 @@ public:
 	void HealInput();
 	void AddScoreInput();
 	void DamageNearestEnemyInput();
-	
+		
 	void ShootProjectile();
 
 	/*

@@ -11,17 +11,17 @@
 AOrbArenaProjectile::AOrbArenaProjectile()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	
-	RootComponent = CreateDefaultSubobject<USceneComponent>("RootComponent");
+
+	RootComponent = CreateDefaultSubobject<USceneComponent>("SceneComponent");
 	SetRootComponent(RootComponent);
 	
-	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>("ProjectileMesh");
+	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>("ProjectileComponent");
+	
+	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>("Mesh");
 	StaticMeshComponent->SetupAttachment(RootComponent);
 	
-	SphereComponent = CreateDefaultSubobject<USphereComponent>("SphereCollision");
+	SphereComponent = CreateDefaultSubobject<USphereComponent>("CollisionSphere");
 	SphereComponent->SetupAttachment(RootComponent);
-	
-	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>("ProjectileMovementComponent");
 }
 
 void AOrbArenaProjectile::BeginPlay()
@@ -34,14 +34,29 @@ void AOrbArenaProjectile::BeginPlay()
 void AOrbArenaProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
+	TimeToSelfDestroy = FMath::Max(TimeToSelfDestroy - DeltaTime, 0.f);
+	
+	UE_LOG(LogHAL, Log, TEXT("DestroyTimer: %f"), TimeToSelfDestroy);
+	
+	if (TimeToSelfDestroy <= 0.f)
+	{
+		UE_LOG(LogHAL, Log, TEXT("DESTROYED"));
+		Destroy();
+	}
 }
 
 void AOrbArenaProjectile::DamageEnemy(AActor* ThisActor, AActor* OtherActor)
 {
+	// UE_LOG(LogHAL, Log, TEXT("Has hit: %s"), *OtherActor->GetName());
+	
 	AOrbArenaEnemy* Enemy = Cast<AOrbArenaEnemy>(OtherActor);
 	
 	if (IsValid(Enemy))
 	{
-		Enemy->ApplyDamageAmount(Damage);
+		UE_LOG(LogHAL, Log, TEXT("Has hit: %s"), *Enemy->GetName());
+
+		Enemy->ApplyDamageAmount(ProjectileDamage);
+		Destroy();
 	}
 }

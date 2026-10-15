@@ -8,6 +8,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "OrbArena/Objects/OrbArenaEnergyOrb.h"
+#include "OrbArena/Objects/OrbArenaProjectile.h"
 
 // Sets default values
 AOrbArenaCharacter::AOrbArenaCharacter()
@@ -80,6 +81,7 @@ void AOrbArenaCharacter::Tick(float DeltaTime)
 
 	if (GameState == EGameState::Playing)
 	{
+		RemainingFireCooldown = FMath::Max(RemainingFireCooldown - DeltaTime, 0.f);
 		CheckGameState();
 	}
 	else
@@ -110,7 +112,7 @@ void AOrbArenaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 	EnhancedInputComponent->BindAction(AddScoreAction, ETriggerEvent::Triggered, this, &AOrbArenaCharacter::AddScoreInput);
 
-	EnhancedInputComponent->BindAction(DamageEnemyAction, ETriggerEvent::Started, this, &AOrbArenaCharacter::ShootProjectile);
+	EnhancedInputComponent->BindAction(DamageEnemyAction, ETriggerEvent::Triggered, this, &AOrbArenaCharacter::ShootProjectile);
 }
 
 void AOrbArenaCharacter::MovePlayer(const FInputActionValue& Value)
@@ -201,31 +203,41 @@ void AOrbArenaCharacter::ShootProjectile()
 	{
 		return;
 	}
-	
-	// Getting and storing the cursor hit information
+
+	if (RemainingFireCooldown > 0.f)
+	{
+		return;
+	}
+
 	FHitResult CursorHit;
 	ArenaPlayerController->GetHitResultUnderCursor(ECC_Visibility, false, CursorHit);
-	
-	// Setting the direction of the projectile
+
 	FVector ShootDirection = CursorHit.ImpactPoint - GetActorLocation();
+
 	ShootDirection.Z = 0.f;
 	ShootDirection = ShootDirection.GetSafeNormal();
-	
-	// Spawn the projectile
-	FVector SpawnLocation = GetActorLocation() + ShootDirection * ProjectileOffset;
-	
+
+	FVector SpawnLocation = GetActorLocation() + ShootDirection * 45.f;
+
 	FRotator SpawnRotation = ShootDirection.Rotation();
-	
+
 	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.Owner = this;
+	SpawnParameters.Instigator = this;
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-	
-	AActor* Projectile = GetWorld()->SpawnActor<AActor>(
-		ProjectileBlueprint,
-		SpawnLocation,
-		SpawnRotation,
+
+	AOrbArenaProjectile* Projectile = GetWorld()->SpawnActor<AOrbArenaProjectile>(
+		ProjectileBlueprint, 
+		SpawnLocation, 
+		SpawnRotation, 
 		SpawnParameters
 		);
-	
+
+	if (IsValid(Projectile))
+	{
+		RemainingFireCooldown = FireCooldown;
+		UE_LOG(LogTemp, Warning, TEXT("Projectile fired. Next shot in %.2f seconds"), FireCooldown);
+	}
 }
 
 void AOrbArenaCharacter::UpdateMovementSpeed()
