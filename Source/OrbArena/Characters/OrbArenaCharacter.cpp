@@ -11,6 +11,7 @@
 #include "OrbArena/Objects/OrbArenaEnergyOrb.h"
 #include "OrbArena/Objects/OrbArenaProjectile.h"
 #include "OrbArena/UI/OrbArenaHealthBarWidget.h"
+#include "OrbArena/UI/OrbArenaHUDWidget.h"
 
 // Sets default values
 AOrbArenaCharacter::AOrbArenaCharacter()
@@ -72,6 +73,12 @@ void AOrbArenaCharacter::BeginPlay()
 		
 		ArenaPlayerController->SetShowMouseCursor(true);
 		
+		if (HUDWidgetClass)
+		{
+			UOrbArenaHUDWidget* HUDWidget = CreateWidget<UOrbArenaHUDWidget>(ArenaPlayerController, HUDWidgetClass);
+			HUDWidget->AddToViewport();
+		}
+		
 		if (ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer())
 		{
 			if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem =
@@ -98,8 +105,8 @@ void AOrbArenaCharacter::Tick(float DeltaTime)
 		GetCharacterMovement()->StopMovementImmediately();
 	}
 
-	PrintTextToScreen();
-	PrintPlayerLocation();
+	// PrintTextToScreen();
+	// PrintPlayerLocation();
 }
 
 // Called to bind functionality to input

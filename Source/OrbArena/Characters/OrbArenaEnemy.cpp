@@ -4,17 +4,25 @@
 #include "OrbArenaEnemy.h"
 
 #include "OrbArenaCharacter.h"
+#include "Components/WidgetComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "OrbArena/UI/OrbArenaHealthBarWidget.h"
 
 
 AOrbArenaEnemy::AOrbArenaEnemy()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	
+	EnemyHealthBarComponent = CreateDefaultSubobject<UWidgetComponent>("HealthBar");
+	EnemyHealthBarComponent->SetupAttachment(GetRootComponent());
+	EnemyHealthBarComponent->SetWidgetSpace(EWidgetSpace::Screen);
 }
 
 void AOrbArenaEnemy::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	UpdateHealth();
 
 	PlayerCharacter = Cast<AOrbArenaCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 }
@@ -74,6 +82,7 @@ void AOrbArenaEnemy::ApplyDamageAmount(float InAmount)
 
 	EnemyStats.Health -= FMath::Max(InAmount, 0.f);
 	EnemyStats.Health = FMath::Clamp(EnemyStats.Health, 0.f, EnemyStats.MaxHealth);
+	UpdateHealth();
 
 	UE_LOG(LogTemp, Warning, TEXT("Ouch, %s is damaged. Health remaining: %.2f"), *EnemyName, EnemyStats.Health);
 
@@ -103,6 +112,16 @@ void AOrbArenaEnemy::Debugging()
 	DrawDebugSphere(GetWorld(), Location, EnemyStats.AttackRange, 16, DebugColor, false, 0.f, 0, 2.f);
 
 	DrawDebugDirectionalArrow(GetWorld(), Location, Location + GetActorForwardVector() * 150.f, 30.f, DebugColor, false, 0.f, 0, 3.f);
+}
+
+void AOrbArenaEnemy::UpdateHealth()
+{
+	UOrbArenaHealthBarWidget* HealthBarWidget = Cast<UOrbArenaHealthBarWidget>(EnemyHealthBarComponent->GetUserWidgetObject());
+	
+	if (IsValid(HealthBarWidget))
+	{
+		HealthBarWidget->SetHealth(EnemyStats.Health, EnemyStats.MaxHealth);
+	}
 }
 
 void AOrbArenaEnemy::UpdateVisionAndTurning(float DeltaTime)

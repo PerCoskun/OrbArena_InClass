@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "OrbArenaEnemy.generated.h"
 
+class UWidgetComponent;
+class UOrbArenaHealthBarWidget;
 class AOrbArenaCharacter;
 
 USTRUCT(BlueprintType)
@@ -95,6 +97,12 @@ public:
 	// Helpers
 	UPROPERTY()
 	AOrbArenaCharacter* PlayerCharacter = nullptr;
+	
+	/*
+	 * UI
+	 */
+	UPROPERTY(EditAnywhere, Category = "UI")
+	UWidgetComponent* EnemyHealthBarComponent;
 
 	/*
 	* Functions
@@ -102,6 +110,9 @@ public:
 	void AttackPlayer();
 	void ApplyDamageAmount(float InAmount);
 	void Debugging();
+	
+	// UI Functions
+	void UpdateHealth();
 	
 	void UpdateVisionAndTurning(float DeltaTime);
 	void MoveTowardsPlayer(float DeltaTime);
