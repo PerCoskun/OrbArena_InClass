@@ -59,6 +59,7 @@ void AOrbArenaEnergyOrb::OrbPickedUp(int32 InPointWorth)
 		PlayerCharacter->AddScore(InPointWorth);
 		UE_LOG(LogTemp, Warning, TEXT("PICKED UP!! Gained %d points"), OrbLootDrop.Value);
 		PlayerCharacter->UpdateRemainingOrbCount();
+
 		Destroy();
 	}
 }

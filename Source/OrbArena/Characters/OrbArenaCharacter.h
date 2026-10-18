@@ -76,6 +76,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Player|Stats")
 	FPlayerStats PlayerStats;
 
+	UPROPERTY(VisibleAnywhere, Category = "Player|Stats")
+	bool bIsLowHealth = false;
+
 	/*
 	 * System Variables
 	 */
@@ -135,7 +138,22 @@ public:
 	
 	UPROPERTY()
 	APlayerController* ArenaPlayerController;
-	
+
+	/*
+	 * UI
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UOrbArenaHUDWidget> HUDWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UOrbArenaEndScreenWidget> EndScreenWidgetClass;
+
+	UPROPERTY()
+	UOrbArenaEndScreenWidget* EndScreenWidget = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
+	UWidgetComponent* HealthBarComponent;
+
 	/*
 	 * Combat
 	 */
@@ -187,18 +205,6 @@ public:
 	UInputAction* DamageEnemyAction;
 
 	/*
-	 * UI
-	 */
-	UPROPERTY(EditAnywhere, Category = "UI")
-	TSubclassOf<UOrbArenaHUDWidget> HUDWidgetClass;
-	
-	UPROPERTY(EditAnywhere, Category = "UI")
-	TSubclassOf<UOrbArenaEndScreenWidget> EndScreenWidgetClass;		
-	
-	UPROPERTY(EditAnywhere, Category = "UI")
-	UWidgetComponent* HealthBar;
-	
-	/*
 	 * Player Functions
 	 */
 	void MovePlayer(const FInputActionValue& Value);
@@ -220,8 +226,10 @@ public:
 	void HealPlayer(float InAmount);
 	void ApplyDamageAmount(float InAmount);
 	void LoseLife();
-	
-	// UI related functions
+
+	void ShowEndScreen();
+	void UpdateLowHealth();
+	void RestartGame();
 	void UpdateHealthBar();
 
 	void FindEnergyOrbs();

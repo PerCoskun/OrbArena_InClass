@@ -37,8 +37,6 @@ void AOrbArenaProjectile::Tick(float DeltaTime)
 	
 	TimeToSelfDestroy = FMath::Max(TimeToSelfDestroy - DeltaTime, 0.f);
 	
-	// UE_LOG(LogHAL, Log, TEXT("DestroyTimer: %f"), TimeToSelfDestroy);
-	
 	if (TimeToSelfDestroy <= 0.f)
 	{
 		UE_LOG(LogHAL, Log, TEXT("DESTROYED"));
@@ -48,13 +46,11 @@ void AOrbArenaProjectile::Tick(float DeltaTime)
 
 void AOrbArenaProjectile::DamageEnemy(AActor* ThisActor, AActor* OtherActor)
 {
-	// UE_LOG(LogHAL, Log, TEXT("Has hit: %s"), *OtherActor->GetName());
-	
 	AOrbArenaEnemy* Enemy = Cast<AOrbArenaEnemy>(OtherActor);
 	
 	if (IsValid(Enemy))
 	{
-		// UE_LOG(LogHAL, Log, TEXT("Has hit: %s"), *Enemy->GetName());
+		UE_LOG(LogHAL, Log, TEXT("Has hit: %s"), *Enemy->GetName());
 
 		Enemy->ApplyDamageAmount(ProjectileDamage);
 		Destroy();

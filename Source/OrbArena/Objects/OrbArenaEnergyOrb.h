@@ -70,5 +70,6 @@ public:
 	AOrbArenaCharacter* PlayerCharacter;
 	
 	void OrbPickedUp(int32 InPointWorth);
+
 	
 };

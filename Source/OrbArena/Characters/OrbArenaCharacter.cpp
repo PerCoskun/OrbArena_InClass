@@ -5,25 +5,26 @@
 
 #include "EnhancedInputComponent.h"
 #include "OrbArenaEnemy.h"
-#include "Components/WidgetComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "OrbArena/Objects/OrbArenaEnergyOrb.h"
 #include "OrbArena/Objects/OrbArenaProjectile.h"
-#include "OrbArena/UI/OrbArenaHealthBarWidget.h"
 #include "OrbArena/UI/OrbArenaHUDWidget.h"
+#include "OrbArena/UI/OrbArenaEndScreenWidget.h"
+#include "OrbArena/UI/OrbArenaHealthBarWidget.h"
+#include "Components/WidgetComponent.h"
 
 // Sets default values
 AOrbArenaCharacter::AOrbArenaCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	HealthBar = CreateDefaultSubobject<UWidgetComponent>("HealthBar");
-	HealthBar->SetupAttachment(GetRootComponent());
-	HealthBar->SetWidgetSpace(EWidgetSpace::Screen);
-	HealthBar->SetDrawSize(FVector2D(80.f, 10.f));
-	HealthBar->SetRelativeLocation(FVector(32.f, 0.f, 50.f));
-	
+	HealthBarComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBarComponent"));
+	HealthBarComponent->SetupAttachment(GetRootComponent());
+	HealthBarComponent->SetWidgetSpace(EWidgetSpace::Screen);
+	HealthBarComponent->SetDrawSize(FVector2D(80.f, 10.f));
+	HealthBarComponent->SetRelativeLocation(FVector(32.f, 0.f, 50.f));
+
 	// // Session 7 - Arrays -- Use as an example
 	// ExampleScores.Add(100);
 	// ExampleScores.Add(450);
@@ -70,15 +71,15 @@ void AOrbArenaCharacter::BeginPlay()
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
 		ArenaPlayerController = PlayerController;
-		
+
 		ArenaPlayerController->SetShowMouseCursor(true);
-		
+
 		if (HUDWidgetClass)
 		{
-			UOrbArenaHUDWidget* HUDWidget = CreateWidget<UOrbArenaHUDWidget>(ArenaPlayerController, HUDWidgetClass);
+			UOrbArenaHUDWidget* HUDWidget = CreateWidget<UOrbArenaHUDWidget>(PlayerController, HUDWidgetClass);
 			HUDWidget->AddToViewport();
 		}
-		
+
 		if (ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer())
 		{
 			if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem =
@@ -324,6 +325,7 @@ void AOrbArenaCharacter::HealPlayer(float InAmount)
 
 	PlayerStats.Health += FMath::Max(InAmount, 0.f);
 	PlayerStats.Health = FMath::Clamp(PlayerStats.Health, 0, PlayerStats.MaxHealth);
+	UpdateLowHealth();
 	UpdateHealthBar();
 
 	UE_LOG(LogTemp, Warning, TEXT("Player healed, new Health is %.2f"), PlayerStats.Health);
@@ -338,12 +340,13 @@ void AOrbArenaCharacter::ApplyDamageAmount(float InAmount)
 
 	PlayerStats.Health -= FMath::Max(InAmount, 0.f);
 	PlayerStats.Health = FMath::Clamp(PlayerStats.Health, 0.f, PlayerStats.MaxHealth);
-	
+
+	UpdateLowHealth();
 	UpdateHealthBar();
 
 	UE_LOG(LogTemp, Warning, TEXT("Player damaged, new Health is %.2f"), PlayerStats.Health);
 
-	if (PlayerStats.MaxHealth > 0.f && PlayerStats.Health <= PlayerStats.MaxHealth * 0.25f)
+	if (bIsLowHealth)
 	{
 		if (GEngine != nullptr)
 		{
@@ -369,24 +372,59 @@ void AOrbArenaCharacter::LoseLife()
 	if (PlayerLives > 0)
 	{
 		PlayerStats.Health = PlayerStats.MaxHealth;
+		UpdateLowHealth();
 		UpdateHealthBar();
 	}
 	else
 	{
 		GameState = EGameState::Lost;
+		ShowEndScreen();
 		GetCharacterMovement()->StopMovementImmediately();
 		UE_LOG(LogTemp, Warning, TEXT("GAME OVER!!"));
 	}
 }
 
+void AOrbArenaCharacter::ShowEndScreen()
+{
+	if (!IsValid(ArenaPlayerController) || !EndScreenWidgetClass)
+	{
+		return;
+	}
+
+	// Create the widget the first time, then reuse it (Restart removes it from the screen again)
+	if (!IsValid(EndScreenWidget))
+	{
+		EndScreenWidget = CreateWidget<UOrbArenaEndScreenWidget>(ArenaPlayerController, EndScreenWidgetClass);
+	}
+
+	EndScreenWidget->ShowResult(this);
+	EndScreenWidget->AddToViewport();
+
+	// Disable the player input, and let the mouse click the UI instead of the game
+	DisableInput(ArenaPlayerController);
+	ArenaPlayerController->SetInputMode(FInputModeUIOnly());
+}
+
+void AOrbArenaCharacter::UpdateLowHealth()
+{
+	bIsLowHealth = PlayerStats.Health <= PlayerStats.MaxHealth * 0.25f;
+}
+
 void AOrbArenaCharacter::UpdateHealthBar()
 {
-	UOrbArenaHealthBarWidget* HealthBarWidget = Cast<UOrbArenaHealthBarWidget>(HealthBar->GetUserWidgetObject());
-	
+	UOrbArenaHealthBarWidget* HealthBarWidget = Cast<UOrbArenaHealthBarWidget>(HealthBarComponent->GetUserWidgetObject());
+
 	if (IsValid(HealthBarWidget))
 	{
 		HealthBarWidget->SetHealth(PlayerStats.Health, PlayerStats.MaxHealth);
 	}
+}
+
+void AOrbArenaCharacter::RestartGame()
+{
+	GameState = EGameState::Playing;
+	ArenaPlayerController->SetInputMode(FInputModeGameOnly());
+	UGameplayStatics::OpenLevel(this, FName(*UGameplayStatics::GetCurrentLevelName(this)));
 }
 
 // Session 7 - Finding every orb
@@ -480,6 +518,11 @@ void AOrbArenaCharacter::CheckGameState()
 	{
 		GameState = EGameState::Won;
 		UE_LOG(LogTemp, Warning, TEXT("YOU WON: all Orbs collected!"));
+	}
+
+	if (GameState != EGameState::Playing)
+	{
+		ShowEndScreen();
 	}
 }
 

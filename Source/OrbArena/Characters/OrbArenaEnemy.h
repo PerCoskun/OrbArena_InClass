@@ -6,9 +6,8 @@
 #include "GameFramework/Character.h"
 #include "OrbArenaEnemy.generated.h"
 
-class UWidgetComponent;
-class UOrbArenaHealthBarWidget;
 class AOrbArenaCharacter;
+class UWidgetComponent;
 
 USTRUCT(BlueprintType)
 struct FEnemyStats
@@ -94,15 +93,12 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Enemy|Info")
 	bool bDrawDebug = true;
 	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy|UI")
+	UWidgetComponent* HealthBarComponent;
+
 	// Helpers
 	UPROPERTY()
 	AOrbArenaCharacter* PlayerCharacter = nullptr;
-	
-	/*
-	 * UI
-	 */
-	UPROPERTY(EditAnywhere, Category = "UI")
-	UWidgetComponent* EnemyHealthBarComponent;
 
 	/*
 	* Functions
@@ -110,10 +106,8 @@ public:
 	void AttackPlayer();
 	void ApplyDamageAmount(float InAmount);
 	void Debugging();
-	
-	// UI Functions
-	void UpdateHealth();
-	
+	void UpdateHealthBar();
+
 	void UpdateVisionAndTurning(float DeltaTime);
 	void MoveTowardsPlayer(float DeltaTime);
 };
