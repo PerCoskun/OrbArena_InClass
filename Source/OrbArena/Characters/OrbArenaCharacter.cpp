@@ -89,6 +89,7 @@ void AOrbArenaCharacter::BeginPlay()
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		InputMode.SetHideCursorDuringCapture(false);
 		ArenaPlayerController->SetInputMode(InputMode);
+		ArenaPlayerController->SetShowMouseCursor(true);
 
 		if (HUDWidgetClass)
 		{
