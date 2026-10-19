@@ -4,7 +4,9 @@
 #include "OrbArenaCharacter.h"
 
 #include "EnhancedInputComponent.h"
+#include "NiagaraSystem.h"
 #include "OrbArenaEnemy.h"
+#include "Components/AudioComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "OrbArena/Objects/OrbArenaEnergyOrb.h"
@@ -24,6 +26,10 @@ AOrbArenaCharacter::AOrbArenaCharacter()
 	HealthBarComponent->SetWidgetSpace(EWidgetSpace::Screen);
 	HealthBarComponent->SetDrawSize(FVector2D(80.f, 10.f));
 	HealthBarComponent->SetRelativeLocation(FVector(32.f, 0.f, 50.f));
+	
+	AudioComponent = CreateDefaultSubobject<UAudioComponent>("AudioPlayer");
+	AudioComponent->SetupAttachment(GetRootComponent());
+	AudioComponent->SetAutoActivate(false);
 
 	// // Session 7 - Arrays -- Use as an example
 	// ExampleScores.Add(100);
@@ -67,12 +73,21 @@ void AOrbArenaCharacter::BeginPlay()
 	FindEnergyOrbs();
 	PrintLootDrops();
 	UpdateHealthBar();
+	
+	if (IsValid(LevelMusic))
+	{
+		AudioComponent->SetSound(LevelMusic);
+		AudioComponent->Play();
+	}
 
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
 		ArenaPlayerController = PlayerController;
 
-		ArenaPlayerController->SetShowMouseCursor(true);
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputMode.SetHideCursorDuringCapture(false);
+		ArenaPlayerController->SetInputMode(InputMode);
 
 		if (HUDWidgetClass)
 		{
@@ -253,7 +268,11 @@ void AOrbArenaCharacter::ShootProjectile()
 	if (IsValid(Projectile))
 	{
 		RemainingFireCooldown = FireCooldown;
-		UE_LOG(LogTemp, Warning, TEXT("Projectile fired. Next shot in %.2f seconds"), FireCooldown);
+		// UE_LOG(LogTemp, Warning, TEXT("Projectile fired. Next shot in %.2f seconds"), FireCooldown);
+		if (IsValid(ShootSFX))
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, ShootSFX, GetActorLocation());
+		}
 	}
 }
 
@@ -346,6 +365,11 @@ void AOrbArenaCharacter::ApplyDamageAmount(float InAmount)
 
 	UE_LOG(LogTemp, Warning, TEXT("Player damaged, new Health is %.2f"), PlayerStats.Health);
 
+	if (IsValid(HurtSFX))
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, HurtSFX, GetActorLocation());
+	}
+	
 	if (bIsLowHealth)
 	{
 		if (GEngine != nullptr)
@@ -377,6 +401,15 @@ void AOrbArenaCharacter::LoseLife()
 	}
 	else
 	{
+		if (IsValid(DeathSFX))
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, DeathSFX, GetActorLocation());
+		}
+		
+		if (IsValid(DeathVFX))
+		{
+			
+		}
 		GameState = EGameState::Lost;
 		ShowEndScreen();
 		GetCharacterMovement()->StopMovementImmediately();

@@ -7,6 +7,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "OrbArenaCharacter.generated.h"
 
+class UNiagaraSystem;
 class AOrbArenaProjectile;
 class AOrbArenaEnergyOrb;
 class UWidgetComponent;
@@ -204,6 +205,31 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	UInputAction* DamageEnemyAction;
 
+	/*
+	 * Audio / VFX
+	 */
+	UPROPERTY(EditAnywhere, Category = "Feedback|Music")
+	UAudioComponent* AudioComponent;
+	
+	UPROPERTY(EditAnywhere, Category = "Feedback|Music")
+	USoundBase* LevelMusic;
+	
+	UPROPERTY(EditAnywhere, Category = "Feedback|SFX")
+	USoundBase* ShootSFX;
+	
+	UPROPERTY(EditAnywhere, Category = "Feedback|SFX")
+	USoundBase* HurtSFX;
+	
+	UPROPERTY(EditAnywhere, Category = "Feedback|SFX")
+	USoundBase* DeathSFX;
+	
+	UPROPERTY(EditAnywhere, Category = "Feedback|VFX")
+	UNiagaraSystem* HurtVFX;
+	
+	UPROPERTY(EditAnywhere, Category = "Feedback|VFX")
+	UNiagaraSystem* DeathVFX;
+	
+	
 	/*
 	 * Player Functions
 	 */
