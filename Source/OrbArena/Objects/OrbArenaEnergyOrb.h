@@ -63,6 +63,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Config")
 	float OrbRotationSpeed = 120.f;
 	
+	UPROPERTY(EditAnywhere, Category = "Config|SFX")
+	USoundBase* PickupSFX;
+	
 	/*
 	 * Helper Functions
 	 */

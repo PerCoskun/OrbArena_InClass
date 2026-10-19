@@ -5,6 +5,7 @@
 
 #include "EnhancedInputComponent.h"
 #include "NiagaraSystem.h"
+#include "NiagaraFunctionLibrary.h"
 #include "OrbArenaEnemy.h"
 #include "Components/AudioComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -370,6 +371,11 @@ void AOrbArenaCharacter::ApplyDamageAmount(float InAmount)
 		UGameplayStatics::PlaySoundAtLocation(this, HurtSFX, GetActorLocation());
 	}
 	
+	if (IsValid(HurtVFX))
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, HurtVFX, GetActorLocation());
+	}
+	
 	if (bIsLowHealth)
 	{
 		if (GEngine != nullptr)
@@ -408,8 +414,9 @@ void AOrbArenaCharacter::LoseLife()
 		
 		if (IsValid(DeathVFX))
 		{
-			
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, DeathVFX, GetActorLocation());
 		}
+			
 		GameState = EGameState::Lost;
 		ShowEndScreen();
 		GetCharacterMovement()->StopMovementImmediately();

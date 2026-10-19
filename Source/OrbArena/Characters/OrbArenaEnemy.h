@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "OrbArenaEnemy.generated.h"
 
+class UNiagaraSystem;
 class AOrbArenaCharacter;
 class UWidgetComponent;
 
@@ -100,6 +101,19 @@ public:
 	UPROPERTY()
 	AOrbArenaCharacter* PlayerCharacter = nullptr;
 
+	/*
+	 * VFX / SFX
+	 */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Feedback")
+	UNiagaraSystem* HurtVFX;
+	
+	UPROPERTY(EditAnywhere, Category = "Enemy|Feedback")
+	UNiagaraSystem* DeathVFX;
+	
+	UPROPERTY(EditAnywhere, Category = "Enemy|Feedback")
+	USoundBase* DeathSFX;
+	
+	
 	/*
 	* Functions
 	*/

@@ -57,6 +57,12 @@ void AOrbArenaEnergyOrb::OrbPickedUp(int32 InPointWorth)
 	{
 		bHasBeenPickedUp = true;
 		PlayerCharacter->AddScore(InPointWorth);
+		
+		if (IsValid(PickupSFX))
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, PickupSFX, GetActorLocation());
+		}
+		
 		UE_LOG(LogTemp, Warning, TEXT("PICKED UP!! Gained %d points"), OrbLootDrop.Value);
 		PlayerCharacter->UpdateRemainingOrbCount();
 

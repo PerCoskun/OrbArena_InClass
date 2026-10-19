@@ -3,6 +3,8 @@
 
 #include "OrbArenaEnemy.h"
 
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 #include "OrbArenaCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/WidgetComponent.h"
@@ -85,10 +87,25 @@ void AOrbArenaEnemy::ApplyDamageAmount(float InAmount)
 	EnemyStats.Health = FMath::Clamp(EnemyStats.Health, 0.f, EnemyStats.MaxHealth);
 	UpdateHealthBar();
 
+	if (IsValid(HurtVFX))
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, HurtVFX, GetActorLocation());
+	}
+
 	UE_LOG(LogTemp, Warning, TEXT("Ouch, %s is damaged. Health remaining: %.2f"), *EnemyName, EnemyStats.Health);
 
 	if (EnemyStats.Health <= 0.f)
 	{
+		if (IsValid(DeathVFX))
+		{
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, DeathVFX, GetActorLocation());
+		}
+
+		if (IsValid(DeathSFX))
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, DeathSFX, GetActorLocation());
+		}
+
 		UE_LOG(LogTemp, Warning, TEXT("%s died and is being destroyed."), *EnemyName);
 		Destroy();
 	}
